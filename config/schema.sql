@@ -37,5 +37,5 @@ CREATE TABLE IF NOT EXISTS votes (
 
 -- Create admin user if not exists
 INSERT INTO users (username, password, email, full_name, role)
-SELECT 'admin', '$2y$10$YourHashedPasswordHere', 'admin@example.com', 'System Admin', 'admin'
+SELECT 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@example.com', 'System Admin', 'admin'
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin'); 
