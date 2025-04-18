@@ -219,6 +219,68 @@ A modern and secure web-based voting system built with PHP and MySQL, featuring 
    - Update dependencies
    ```
 
+## How to Run This Project
+
+### Prerequisites
+1. Install the following software:
+   - [XAMPP](https://www.apachefriends.org/index.html) or [WAMP](http://www.wampserver.com/en/) for local development.
+   - A modern web browser (e.g., Chrome, Firefox).
+   - Git (optional, for version control).
+
+### Steps to Run
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/your-repo/meddy_voting_system.git
+   cd meddy_voting_system
+   ```
+
+2. **Set Up the Database**
+   - Create a new database in MySQL named `meddy_voting_system`.
+   - Import the `schema.sql` file located in the `config/` directory into the database.
+
+3. **Configure the Application**
+   - Open `config/config.php` and update the database credentials:
+     ```php
+     define('DB_HOST', 'localhost');
+     define('DB_USER', 'your_username');
+     define('DB_PASS', 'your_password');
+     define('DB_NAME', 'meddy_voting_system');
+     ```
+
+4. **Start the Server**
+   - Place the project folder in your web server's root directory:
+     - For XAMPP: `C:\xampp\htdocs\meddy_voting_system`
+     - For WAMP: `C:\wamp\www\meddy_voting_system`
+   - Start Apache and MySQL services from the control panel.
+
+5. **Access the Application**
+   - Open your browser and navigate to:
+     ```
+     http://localhost/meddy_voting_system
+     ```
+
+6. **Create an Admin Account**
+   - Navigate to the registration page (`/register.php`).
+   - Register as an admin to access the admin dashboard.
+
+7. **Set Up Voting**
+   - Log in as an admin.
+   - Add positions and candidates.
+   - Configure voting time settings.
+
+8. **Test the Application**
+   - Register as a voter.
+   - Log in and cast your vote.
+   - View results on the results page.
+
+### Troubleshooting
+- Check the `logs/error.log` file for any errors.
+- Ensure the database credentials in `config/config.php` are correct.
+- Verify that Apache and MySQL services are running.
+
+For further assistance, refer to the [Support](#support) section.
+
 ## Usage
 
 ### Admin Access
@@ -301,4 +363,4 @@ Developed and maintained by [Your Organization/Name]
 2. Create a feature branch
 3. Commit changes
 4. Push to the branch
-5. Create a Pull Request 
+5. Create a Pull Request
