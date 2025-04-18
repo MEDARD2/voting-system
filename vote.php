@@ -102,10 +102,11 @@ if (!isset($error)) {
 }
 
 // Handle vote submission
+// Add debugging logs to track the voting process
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
     // Debug: Log the POST data
     error_log("POST data received: " . print_r($_POST, true));
-    
+
     // Check if votes array exists and is not empty
     if (!isset($_POST['votes']) || empty($_POST['votes'])) {
         error_log("No votes submitted");
@@ -113,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
     } else {
         $votes = $_POST['votes'];
         $has_selected_votes = false;
-        
+
         // Check if any votes were selected
         foreach ($votes as $position_id => $candidate_ids) {
             if (!empty($candidate_ids)) {
@@ -124,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
                 break;
             }
         }
-        
+
         if (!$has_selected_votes) {
             $error = "Please select at least one candidate to vote.";
             error_log("No candidates selected");
@@ -132,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
             try {
                 // Start transaction
                 $conn->begin_transaction();
-                
+
                 // Record votes
                 foreach ($votes as $position_id => $candidate_ids) {
                     foreach ($candidate_ids as $candidate_id) {
@@ -145,23 +146,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($error)) {
                         }
                     }
                 }
-                
+
                 // Update user's voting status
                 $update_stmt = $conn->prepare("UPDATE users SET has_voted = 1, last_vote_time = NOW() WHERE id = ?");
                 $update_stmt->bind_param("i", $_SESSION['user_id']);
                 $update_stmt->execute();
-                
+
                 // Commit transaction
                 $conn->commit();
-                
+
                 // Set success message
                 $_SESSION['vote_success'] = true;
                 error_log("Vote successfully recorded for user: " . $_SESSION['user_id']);
-                
+
                 // Redirect to results page
                 header("Location: results.php");
                 exit();
-                
+
             } catch (Exception $e) {
                 // Rollback transaction on error
                 $conn->rollback();
@@ -250,155 +251,7 @@ if (!$error && isset($start_time) && isset($end_time)): ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="assets/css/vote.css">
     <style>
-        .voting-dashboard {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-            background: var(--card-background);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
-
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .dashboard-header h1 {
-            font-size: 2.5rem;
-            color: var(--primary-color);
-        }
-
-        .dashboard-header p {
-            font-size: 1.2rem;
-            color: var(--secondary-color);
-        }
-
-        .positions-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .position-section {
-            background: var(--background-color);
-            border-radius: var(--border-radius);
-            padding: 15px;
-            box-shadow: var(--shadow);
-        }
-
-        .position-header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .position-header h2 {
-            font-size: 1.8rem;
-            color: var(--primary-color);
-        }
-
-        .candidates-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .candidate-card {
-            background: var(--card-background);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            text-align: center;
-            transition: transform 0.3s;
-            position: relative;
-            padding-bottom: 20px;
-        }
-
-        .candidate-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        .candidate-image {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 1 / 1;
-            object-fit: cover;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .candidate-info {
-            padding: 10px;
-        }
-
-        .candidate-info h3 {
-            font-size: 1.2rem;
-            color: var(--text-color);
-            margin-bottom: 5px;
-        }
-
-        .candidate-info p {
-            font-size: 0.9rem;
-            color: var(--secondary-color);
-            margin-bottom: 10px;
-        }
-
-        .custom-checkbox {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .custom-checkbox input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: var(--primary-color);
-        }
-
-        .custom-checkbox label {
-            font-size: 1rem;
-            color: var(--text-color);
-            cursor: pointer;
-        }
-
-        .submit-section {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .submit-button {
-            background: var(--primary-color);
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .submit-button:hover {
-            background: #0056b3;
-        }
-
-        .show-more-btn {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            font-size: 0.9rem;
-            cursor: pointer;
-            padding: 0;
-            margin-top: 0.5rem;
-            transition: var(--transition);
-        }
-
-        .show-more-btn:hover {
-            color: #0056b3;
-            text-decoration: underline;
-        }
+        /* Removed inline CSS */
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
