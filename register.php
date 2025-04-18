@@ -1,63 +1,57 @@
 <?php
+require_once 'config/config.php';
+session_start();
+require_once 'includes/functions.php';
 require_once 'includes/header.php';
+
+// Check if user is already logged in
+if (isLoggedIn()) {
+    redirect('index.php', 'You are already logged in.', 'info');
+}
+
+$error = '';
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = sanitize($_POST['username']);
     $email = sanitize($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-    $full_name = sanitize($_POST['full_name']);
     
-    $errors = [];
-    
-    // Validate username
-    if (strlen($username) < 3) {
-        $errors[] = "Username must be at least 3 characters long";
-    }
-    
-    // Validate email
-    if (!isValidEmail($email)) {
-        $errors[] = "Invalid email address";
-    }
-    
-    // Validate password
-    if (strlen($password) < 6) {
-        $errors[] = "Password must be at least 6 characters long";
-    }
-    
-    if ($password !== $confirm_password) {
-        $errors[] = "Passwords do not match";
-    }
-    
-    if (empty($errors)) {
+    // Validate inputs
+    if (empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
+        $error = "All fields are required.";
+    } elseif (!isValidEmail($email)) {
+        $error = "Please enter a valid email address.";
+    } elseif ($password !== $confirm_password) {
+        $error = "Passwords do not match.";
+    } elseif (strlen($password) < 6) {
+        $error = "Password must be at least 6 characters long.";
+    } else {
         $conn = getDBConnection();
         
-        // Check if username exists
-        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
-        $stmt->bind_param("s", $username);
+        // Check if username or email already exists
+        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+        $stmt->bind_param("ss", $username, $email);
         $stmt->execute();
-        if ($stmt->get_result()->num_rows > 0) {
-            $errors[] = "Username already exists";
-        }
+        $result = $stmt->get_result();
         
-        // Check if email exists
-        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        if ($stmt->get_result()->num_rows > 0) {
-            $errors[] = "Email already exists";
-        }
-        
-        if (empty($errors)) {
+        if ($result->num_rows > 0) {
+            $error = "Username or email already exists.";
+        } else {
+            // Hash password
             $hashed_password = hashPassword($password);
-            $stmt = $conn->prepare("INSERT INTO users (username, email, password, full_name, role) VALUES (?, ?, ?, ?, 'voter')");
-            $stmt->bind_param("ssss", $username, $email, $hashed_password, $full_name);
+            
+            // Insert new user
+            $stmt = $conn->prepare("INSERT INTO users (username, email, password, is_admin) VALUES (?, ?, ?, 0)");
+            $stmt->bind_param("sss", $username, $email, $hashed_password);
             
             if ($stmt->execute()) {
-                logActivity($conn->insert_id, "New user registered");
-                redirect('login.php', 'Registration successful! Please login.', 'success');
+                $success = "Registration successful! You can now login.";
+                // Clear form fields
+                $username = $email = '';
             } else {
-                $errors[] = "Registration failed. Please try again.";
+                $error = "Registration failed. Please try again.";
             }
         }
     }
@@ -69,53 +63,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="text-center">Register</h3>
+                    <h4>Register</h4>
                 </div>
                 <div class="card-body">
-                    <?php if (!empty($errors)): ?>
+                    <?php if (!empty($error)): ?>
                         <div class="alert alert-danger">
-                            <ul class="mb-0">
-                                <?php foreach ($errors as $error): ?>
-                                    <li><?php echo $error; ?></li>
-                                <?php endforeach; ?>
-                            </ul>
+                            <i class="bi bi-exclamation-triangle"></i> <?php echo $error; ?>
                         </div>
                     <?php endif; ?>
                     
-                    <form method="POST" action="">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" name="username" required>
+                    <?php if (!empty($success)): ?>
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> <?php echo $success; ?>
+                            <div class="mt-2">
+                                <a href="login.php" class="btn btn-primary">
+                                    <i class="bi bi-box-arrow-in-right"></i> Go to Login
+                                </a>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="full_name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="confirm_password" class="form-label">Confirm Password</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Register</button>
-                        </div>
-                    </form>
-                    <div class="text-center mt-3">
-                        <p>Already have an account? <a href="login.php">Login here</a></p>
-                    </div>
+                    <?php endif; ?>
+                    
+                    <?php if (empty($success)): ?>
+                        <form method="POST" action="">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       value="<?php echo isset($username) ? htmlspecialchars($username) : ''; ?>" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <small class="text-muted">Password must be at least 6 characters long</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-person-plus"></i> Register
+                                </button>
+                                <a href="login.php" class="btn btn-secondary">
+                                    <i class="bi bi-box-arrow-in-right"></i> Already have an account? Login
+                                </a>
+                            </div>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<?php
-require_once 'includes/footer.php';
-?>
+<?php require_once 'includes/footer.php'; ?>

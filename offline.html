@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Meddy Voting System</title>
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <style>
+        .offline-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .offline-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .offline-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .offline-message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+            max-width: 400px;
+        }
+
+        .retry-button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .retry-button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📶</div>
+        <h1 class="offline-title">You're Offline</h1>
+        <p class="offline-message">
+            It seems you're not connected to the internet. Please check your connection and try again.
+            Your votes will be saved and submitted once you're back online.
+        </p>
+        <button class="retry-button" onclick="window.location.reload()">Retry Connection</button>
+    </div>
+
+    <script>
+        // Check for online status periodically
+        setInterval(() => {
+            if (navigator.onLine) {
+                window.location.reload();
+            }
+        }, 5000);
+    </script>
+</body>
+</html> 

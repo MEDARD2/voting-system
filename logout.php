@@ -1,13 +1,26 @@
 <?php
-require_once 'includes/header.php';
+session_start();
 
-if (isLoggedIn()) {
-    logActivity($_SESSION['user_id'], "User logged out");
-    session_destroy();
-    redirect('index.php', 'You have been logged out successfully.', 'success');
-} else {
-    redirect('index.php', 'You are not logged in.', 'warning');
+// Log the logout activity if user was logged in
+if (isset($_SESSION['user_id'])) {
+    require_once 'includes/functions.php';
+    logActivity($_SESSION['user_id'], 'User logged out');
 }
+
+// Clear all session variables
+$_SESSION = array();
+
+// Destroy the session cookie
+if (isset($_COOKIE[session_name()])) {
+    setcookie(session_name(), '', time()-3600, '/');
+}
+
+// Destroy the session
+session_destroy();
+
+// Redirect to home page
+header("Location: index.php?message=You have been successfully logged out.&type=success");
+exit();
 ?>
 
 <!DOCTYPE html>

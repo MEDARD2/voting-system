@@ -1,9 +1,15 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/database.php';
+
+session_start();
 
 // Sanitize input
-function sanitize($input) {
-    return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
+function sanitize($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
 }
 
 // Validate email
@@ -18,7 +24,7 @@ function isLoggedIn() {
 
 // Check if user is admin
 function isAdmin() {
-    return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+    return isset($_SESSION['is_admin']) && ($_SESSION['is_admin'] === true || $_SESSION['is_admin'] == 1);
 }
 
 // Generate secure random token
@@ -27,12 +33,12 @@ function generateToken() {
 }
 
 // Redirect with message
-function redirect($location, $message = '', $type = 'info') {
-    if ($message) {
+function redirect($url, $message = '', $type = '') {
+    if (!empty($message)) {
         $_SESSION['message'] = $message;
         $_SESSION['message_type'] = $type;
     }
-    header("Location: $location");
+    header("Location: $url");
     exit();
 }
 
@@ -41,7 +47,8 @@ function displayMessage() {
     if (isset($_SESSION['message'])) {
         $type = $_SESSION['message_type'] ?? 'info';
         $message = $_SESSION['message'];
-        unset($_SESSION['message'], $_SESSION['message_type']);
+        unset($_SESSION['message']);
+        unset($_SESSION['message_type']);
         return "<div class='alert alert-$type'>$message</div>";
     }
     return '';
@@ -71,7 +78,34 @@ function getUserById($id) {
 
 // Log activity
 function logActivity($user_id, $action) {
-    $timestamp = date('Y-m-d H:i:s');
-    error_log("[$timestamp] User ID: $user_id - $action");
+    $conn = getDBConnection();
+    $stmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, created_at) VALUES (?, ?, NOW())");
+    $stmt->bind_param("is", $user_id, $action);
+    $stmt->execute();
+    $stmt->close();
+}
+
+/**
+ * Check if the current logged-in user has already voted
+ * @return bool Returns true if the user has voted, false otherwise
+ */
+function hasVoted() {
+    if (!isLoggedIn()) {
+        return false;
+    }
+    
+    $conn = getDBConnection();
+    $user_id = $_SESSION['user_id'];
+    
+    $stmt = $conn->prepare("SELECT has_voted FROM users WHERE id = ?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($row = $result->fetch_assoc()) {
+        return $row['has_voted'] == 1;
+    }
+    
+    return false;
 }
 ?> 
