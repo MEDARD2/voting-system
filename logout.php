@@ -1,6 +1,13 @@
 <?php
-session_start();
-session_destroy(); // Destroy the session
+require_once 'includes/header.php';
+
+if (isLoggedIn()) {
+    logActivity($_SESSION['user_id'], "User logged out");
+    session_destroy();
+    redirect('index.php', 'You have been logged out successfully.', 'success');
+} else {
+    redirect('index.php', 'You are not logged in.', 'warning');
+}
 ?>
 
 <!DOCTYPE html>

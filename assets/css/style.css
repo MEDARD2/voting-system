@@ -1,0 +1,69 @@
+/* Custom styles for the voting system */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+/* Card styles */
+.candidate-card {
+    transition: transform 0.2s;
+    margin-bottom: 20px;
+}
+
+.candidate-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.candidate-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Form styles */
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Alert styles */
+.alert {
+    margin-bottom: 20px;
+}
+
+/* Admin dashboard styles */
+.dashboard-stats {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+/* Results page styles */
+.results-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.progress {
+    height: 25px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .form-container {
+        padding: 10px;
+    }
+} 

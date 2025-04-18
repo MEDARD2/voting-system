@@ -1,129 +1,121 @@
 <?php
-include('db.php');  // Include your database connection file
+require_once 'includes/header.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Capture form input
-    $email = $_POST['email'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = sanitize($_POST['username']);
+    $email = sanitize($_POST['email']);
     $password = $_POST['password'];
-
-    // Check if the email already exists in the database
-    $sql_check = "SELECT * FROM users WHERE email='$email'";
-    $result_check = $conn->query($sql_check);
-
-    // If the email already exists, display an error message
-    if ($result_check->num_rows > 0) {
-        echo "<div class='alert alert-danger'>Error: This email is already registered.</div>";
-    } else {
-        // Hash the password before storing it in the database
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-        // Insert new user into the 'users' table
-        $sql = "INSERT INTO users (email, password) VALUES ('$email', '$hashedPassword')";
-        if ($conn->query($sql) === TRUE) {
-            echo "<div class='alert alert-success'>New user registered successfully!</div>";
-        } else {
-            echo "<div class='alert alert-danger'>Error: " . $conn->error . "</div>";
+    $confirm_password = $_POST['confirm_password'];
+    $full_name = sanitize($_POST['full_name']);
+    
+    $errors = [];
+    
+    // Validate username
+    if (strlen($username) < 3) {
+        $errors[] = "Username must be at least 3 characters long";
+    }
+    
+    // Validate email
+    if (!isValidEmail($email)) {
+        $errors[] = "Invalid email address";
+    }
+    
+    // Validate password
+    if (strlen($password) < 6) {
+        $errors[] = "Password must be at least 6 characters long";
+    }
+    
+    if ($password !== $confirm_password) {
+        $errors[] = "Passwords do not match";
+    }
+    
+    if (empty($errors)) {
+        $conn = getDBConnection();
+        
+        // Check if username exists
+        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows > 0) {
+            $errors[] = "Username already exists";
+        }
+        
+        // Check if email exists
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows > 0) {
+            $errors[] = "Email already exists";
+        }
+        
+        if (empty($errors)) {
+            $hashed_password = hashPassword($password);
+            $stmt = $conn->prepare("INSERT INTO users (username, email, password, full_name, role) VALUES (?, ?, ?, ?, 'voter')");
+            $stmt->bind_param("ssss", $username, $email, $hashed_password, $full_name);
+            
+            if ($stmt->execute()) {
+                logActivity($conn->insert_id, "New user registered");
+                redirect('login.php', 'Registration successful! Please login.', 'success');
+            } else {
+                $errors[] = "Registration failed. Please try again.";
+            }
         }
     }
 }
 ?>
 
-<!-- Registration Form -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-image: url('images/Screenshot 2025-04-06 144921.png');
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background-color: #ffffff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 500px;
-        }
-
-        h2 {
-            color: #28a745;
-            font-size: 2rem;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .alert {
-            margin-bottom: 20px;
-        }
-
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        button[type="submit"] {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            width: 100%;
-        }
-
-        button[type="submit"]:hover {
-            background-color:rgb(26, 77, 65);
-        }
-
-        .form-footer {
-            text-align: center;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-
 <div class="container">
-    <h2>Register New Account</h2>
-
-    <!-- Registration form -->
-    <form method="POST">
-        <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
-            <input type="email" name="email" id="email" required>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Register</h3>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($errors)): ?>
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                <?php foreach ($errors as $error): ?>
+                                    <li><?php echo $error; ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <form method="POST" action="">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <p>Already have an account? <a href="login.php">Login here</a></p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="password" class="form-label">Password</label>
-            <input type="password" name="password" id="password" required>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Register</button>
-    </form>
-
-    <div class="form-footer">
-        <a href="login.php">Already have an account? Login here</a>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php
+require_once 'includes/footer.php';
+?>
